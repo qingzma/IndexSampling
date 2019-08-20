@@ -1,0 +1,2 @@
+building_indexes:0,0
+opening_tables:0,0

@@ -4,3 +4,8 @@ build.debug/
 build.release/
 build2
 build.old
+cmake-build-debug/
+.DS_Store
+.idea/
+.vscode/
+*.o

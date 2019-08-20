@@ -18,6 +18,7 @@ global_settings parse_args(int argc, char ** argv)
     TCLAP::SwitchArg arg_nonJoinAttribHash  ("", "nonJoinAttribHash"  , "Perform hash join on non join attributes"         , cmd, false);
     TCLAP::SwitchArg arg_nonJoinAttribJefast("", "nonJoinAttribJefast", "Perform jefast on non join attributes"            , cmd, false);
     TCLAP::SwitchArg arg_jefastModify       ("", "jefastModify"       , "Perform jefast insert and delete experiment"      , cmd, false);
+    TCLAP::SwitchArg arg_pseudoIndexJoin    ("", "pseudoIndexJoin"          , "Perform pseudo index join sampling"         , cmd, false);
 
     TCLAP::ValueArg<int> arg_jefastModifyCount("", "jefastModifyCount", "Number of inserts and deletes to perform in modify experiment", true, 10000, "int");
 
@@ -36,6 +37,7 @@ global_settings parse_args(int argc, char ** argv)
     settings.nonJoinAttribHash   = arg_nonJoinAttribHash.getValue();
     settings.nonJoinAttribJefast = arg_nonJoinAttribJefast.getValue();
     settings.jefastModify        = arg_jefastModify.getValue();
+    settings.pseudoIndexJoin           = arg_pseudoIndexJoin.getValue();
 
     settings.modifyCount         = arg_jefastModifyCount.getValue();
 
@@ -50,7 +52,10 @@ global_settings parse_args(int argc, char ** argv)
 
     settings.buildIndex = settings.nonJoinAttribHash || settings.nonJoinAttribJefast
                        || settings.olkenSample
-                       || settings.joinAttribHash;
+                       || settings.joinAttribHash
+                       || settings.pseudoIndexJoin;
+
+    settings.buildPseudoIndex = settings.pseudoIndexJoin;
 
 #ifdef WIN32
     settings.null_file_name = "nul";

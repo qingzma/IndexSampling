@@ -107,7 +107,7 @@ CC      =
 #                                  SGI, SUN, U2200, VMS, LINUX, WIN32 
 # Current values for WORKLOAD are:  TPCH
 DATABASE= 
-MACHINE = 
+MACHINE = LINUX
 WORKLOAD = 
 #
 CFLAGS	= -g -DDBNAME=\"dss\" -D$(MACHINE) -D$(DATABASE) -D$(WORKLOAD) -DRNG_TEST -D_FILE_OFFSET_BITS=64 

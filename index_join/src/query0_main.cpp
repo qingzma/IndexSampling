@@ -30,6 +30,7 @@
 
 #include "database/jefastIndex.h"
 #include "database/jefastBuilder.h"
+#include "database/pseudoIndex.h"
 
 static std::shared_ptr<Table> region_table;
 static std::shared_ptr<Table> nation_table;
@@ -72,6 +73,13 @@ int64_t exactJoinNoIndex(std::string outfile, std::vector<std::shared_ptr<jefast
         Table1_hash[Table_1->get_int64(f1_enu->getValue(), table1Index2)].push_back(f1_enu->getValue());
     }
 
+    for (auto elem : Table1_hash){
+        for (auto item_in_vector: elem.second){
+            std::cout<<elem.first<<", "<<item_in_vector<<std::endl;
+        }
+
+    }
+
     // build the hash for table 2.  All matched elements from table 1 hash will be emitted
     // the tuple has the form <index from table 1, index for table 2> for all matching tuple
     std::map<jfkey_t, std::vector<std::tuple<int64_t, int64_t> > > Table2_hash;
@@ -84,6 +92,15 @@ int64_t exactJoinNoIndex(std::string outfile, std::vector<std::shared_ptr<jefast
         }
     }
 
+    for (auto elem : Table2_hash){
+        std::cout<<elem.first<<", <";
+        for (auto item_in_vector: elem.second){
+            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<"), ";
+        }
+        std::cout<<">"<<std::endl;
+
+    }
+
     // build the hash for table 3.  All matched elements from table 2 hash will be emitted.
     std::map<jfkey_t, std::vector<std::tuple<int64_t, int64_t, int64_t> > > Table3_hash;
     //int64_t Table_3_count = Table_3->row_count();
@@ -93,6 +110,15 @@ int64_t exactJoinNoIndex(std::string outfile, std::vector<std::shared_ptr<jefast
         for (auto matching_indexes : Table2_hash[value]) {
             Table3_hash[Table_3->get_int64(f3_enu->getValue(), table3Index2)].emplace_back(std::get<0>(matching_indexes), std::get<1>(matching_indexes), f3_enu->getValue());
         }
+    }
+
+    for (auto elem : Table3_hash){
+        std::cout<<elem.first<<", <";
+        for (auto item_in_vector: elem.second){
+            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<","<<std::get<2>(item_in_vector)<<"), ";
+        }
+        std::cout<<">"<<std::endl;
+
     }
 
     // build the hash for table 4?  No, we can just emit when we find a match in this case.
@@ -290,6 +316,106 @@ int64_t baselineJoin(std::string outfile, int output_count, const std::vector<we
     std::ofstream output_file(outfile, std::ios::out);
 
     int count = baselineJoin(output_file, output_count, max_cardinality);
+
+    output_file.close();
+    return count;
+}
+
+
+// Note, we will require a filter for each column.  It can just be an empty filter (an everything filter)
+// we will be doing a linear scan of the data to implement this algorithm for now.
+int64_t pseudoIndexJoin(std::string outfile, std::vector<std::shared_ptr<jefastFilter> > filters) {
+    // implements a straightforward implementation of a join which
+    // does not require an index.
+
+    std::ofstream output_file(outfile, std::ios::out);
+    int64_t count = 0;
+
+    auto Table_1 = region_table;
+    auto Table_2 = nation_table;
+    auto Table_3 = supplier_table;
+    auto Table_4 = partssupp_table;
+
+    int table1Index2 = Table_Region::R_REGIONKEY;
+    int table2Index1 = Table_Nation::N_REGIONKEY;
+
+    int table2Index2 = Table_Nation::N_NATIONKEY;
+    int table3Index1 = Table_Supplier::S_NATIONKEY;
+
+    int table3Index2 = Table_Supplier::S_SUPPKEY;
+    int table4Index1 = Table_Partsupp::PS_SUPPKEY;
+
+    // build the hash for table 1
+    std::map<jfkey_t, std::vector<int64_t> > Table1_hash;
+    //int64_t Table_1_count = Table_1->row_count();
+    //for (int64_t i = 0; i < Table_1_count; ++i) {
+    for (auto f1_enu = filters.at(0)->getEnumerator(); f1_enu->Step();) {
+        Table1_hash[Table_1->get_int64(f1_enu->getValue(), table1Index2)].push_back(f1_enu->getValue());
+    }
+
+    for (auto elem : Table1_hash){
+        for (auto item_in_vector: elem.second){
+            std::cout<<elem.first<<", "<<item_in_vector<<std::endl;
+        }
+
+    }
+
+    // build the hash for table 2.  All matched elements from table 1 hash will be emitted
+    // the tuple has the form <index from table 1, index for table 2> for all matching tuple
+    std::map<jfkey_t, std::vector<std::tuple<int64_t, int64_t> > > Table2_hash;
+    //int64_t Table_2_count = Table_2->row_count();
+    //for (int64_t i = 0; i < Table_2_count; ++i) {
+    for (auto f2_enu = filters.at(1)->getEnumerator(); f2_enu->Step();) {
+        jfkey_t value = Table_2->get_int64(f2_enu->getValue(), table2Index1);
+        for (auto matching_indexes : Table1_hash[value]) {
+            Table2_hash[Table_2->get_int64(f2_enu->getValue(), table2Index2)].emplace_back(matching_indexes, f2_enu->getValue());
+        }
+    }
+
+    for (auto elem : Table2_hash){
+        std::cout<<elem.first<<", <";
+        for (auto item_in_vector: elem.second){
+            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<"), ";
+        }
+        std::cout<<">"<<std::endl;
+
+    }
+
+    // build the hash for table 3.  All matched elements from table 2 hash will be emitted.
+    std::map<jfkey_t, std::vector<std::tuple<int64_t, int64_t, int64_t> > > Table3_hash;
+    //int64_t Table_3_count = Table_3->row_count();
+    //for (int64_t i = 0; i < Table_3_count; ++i) {
+    for (auto f3_enu = filters.at(2)->getEnumerator(); f3_enu->Step();) {
+        jfkey_t value = Table_3->get_int64(f3_enu->getValue(), table3Index1);
+        for (auto matching_indexes : Table2_hash[value]) {
+            Table3_hash[Table_3->get_int64(f3_enu->getValue(), table3Index2)].emplace_back(std::get<0>(matching_indexes), std::get<1>(matching_indexes), f3_enu->getValue());
+        }
+    }
+
+    for (auto elem : Table3_hash){
+        std::cout<<elem.first<<", <";
+        for (auto item_in_vector: elem.second){
+            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<","<<std::get<2>(item_in_vector)<<"), ";
+        }
+        std::cout<<">"<<std::endl;
+
+    }
+
+    // build the hash for table 4?  No, we can just emit when we find a match in this case.
+    //int64_t Table_4_count = Table_4->row_count();
+    //for (int64_t i = 0; i < Table_5_count; ++i) {
+    for (auto f4_enu = filters.at(3)->getEnumerator(); f4_enu->Step();) {
+        int64_t value = Table_4->get_int64(f4_enu->getValue(), table4Index1);
+        for (auto matching_indexes : Table3_hash[value]) {
+            // emit the join results here.
+            output_file << count << ' '
+                        << std::to_string(Table_1->get_int64(std::get<0>(matching_indexes), table1Index2)) << ' '
+                        << std::to_string(Table_2->get_int64(std::get<1>(matching_indexes), table2Index2)) << ' '
+                        << std::to_string(Table_3->get_int64(std::get<2>(matching_indexes), table3Index2)) << ' '
+                        << std::to_string(Table_4->get_int64(f4_enu->getValue(), 1)) << '\n';
+            ++count;
+        }
+    }
 
     output_file.close();
     return count;
@@ -518,6 +644,58 @@ int main(int argc, char** argv) {
         } while (total_time.getSeconds() < 4);
         results_file.close();
     }
+
+    // do index join
+    if (query0Settings.buildPseudoIndex){
+        std::vector<std::shared_ptr<jefastFilter> > filters(4);
+        filters.at(0) = std::shared_ptr<jefastFilter>(new all_jefastFilter(region_table, Table_Region::R_REGIONKEY));
+        filters.at(1) = std::shared_ptr<jefastFilter>(new all_jefastFilter(nation_table, Table_Nation::N_NATIONKEY));
+        filters.at(2) = std::shared_ptr<jefastFilter>(new all_jefastFilter(supplier_table, Table_Supplier::S_SUPPKEY));
+        filters.at(3) = std::shared_ptr<jefastFilter>(new all_jefastFilter(partssupp_table, Table_Partsupp::PS_PARTKEY));
+
+        timer.reset();
+        timer.start();
+        auto count = pseudoIndexJoin("query0_pseudo.txt", filters);
+        timer.stop();
+        std::cout << "pseudo join took " << timer.getMilliseconds() << " milliseconds with cardinality " << count << std::endl;
+        data_map->appendArray("full_join", long(timer.getMilliseconds()));
+        data_map->appendArray("full_join_cadinality", count);
+//        std::cout<<"Start building pseudo index ..."<<std::endl;
+//        timer.reset();
+//        timer.start();
+//        PseudoIndexBuilder pseudoIndexBuilder;
+//
+//        pseudoIndexBuilder.AppendTable(region_table, -1, Table_Region::R_REGIONKEY, 0);
+//        pseudoIndexBuilder.AppendTable(nation_table, Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY, 1);
+//        pseudoIndexBuilder.AppendTable(supplier_table, Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY, 2);
+//        pseudoIndexBuilder.AppendTable(partssupp_table, Table_Partsupp::PS_SUPPKEY, -1, 3);
+//
+//        auto count = exactJoinNoIndex("query0_full.txt", filters);
+//
+//
+//        pseudoIndexBuilder.Build();
+//
+//        timer.stop();
+//
+//
+//        std::cout << "building pseudo index took " << timer.getMilliseconds() << " milliseconds with cardinality " << "NEED FIXED" << std::endl;
+//        data_map->appendArray("pseudo index built ", long(timer.getMilliseconds()));
+    }
+
+    // do a 10% sample using jefast
+    if(query0Settings.pseudoIndexJoin)
+    {
+        timer.reset();
+        timer.start();
+//        auto toRequest = jefastIndex->GetTotal() / 10;
+//        auto count = randomjefastJoin("query0_sample.txt", toRequest, jefastIndex);
+        timer.stop();
+
+        std::cout << "sampling 100 took " << timer.getMilliseconds() << " milliseconds with cardinality " << "NEED FIXED" << std::endl;
+        data_map->appendArray("pseudo index took ", long(timer.getMilliseconds()));
+    }
+
+
 
     data_map->flush();
     std::cout << "done" << std::endl;

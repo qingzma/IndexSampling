@@ -21,9 +21,11 @@ struct global_settings {
     bool nonJoinAttribHash;
     bool nonJoinAttribJefast;
     bool jefastModify;
+    bool pseudoIndexJoin;
 
     bool buildJefast;
     bool buildIndex;
+    bool buildPseudoIndex;
 
     std::string null_file_name;
 };

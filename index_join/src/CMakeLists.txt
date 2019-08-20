@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 2.6.0 FATAL_ERROR)
 find_package(Threads)
 include_directories(../../third_party/)
 
+set(PSEUDO_INDEX
+		database/pseudoIndex.h
+		database/pseudoIndex.cpp)
+
 set(DATABASE_TABLES
 	database/Table.cpp
 	database/Table.h
@@ -90,7 +94,9 @@ set(ADAPTIVE_SAMPLING_FILES
     database/DynamicIndex.h
     )
 
-#ADD_EXECUTABLE(query0_test query0_main.cpp ${DATABASE_TABLES} ${UTILITY_FILES} ${JEFAST_FILES})
+#ADD_EXECUTABLE(query_test query_test.cpp ${PSEUDO_INDEX} ${DATABASE_TABLES} ${UTILITY_FILES} ${JEFAST_FILES})
+
+ADD_EXECUTABLE(query0_test query0_main.cpp ${PSEUDO_INDEX} ${DATABASE_TABLES} ${UTILITY_FILES} ${JEFAST_FILES})
 
 #ADD_EXECUTABLE(query3_test query3_main.cpp ${DATABASE_TABLES} ${UTILITY_FILES} ${JEFAST_FILES})
 
@@ -115,7 +121,7 @@ set(ADAPTIVE_SAMPLING_FILES
 #ADD_EXECUTABLE(iid_test iid_test.cpp ${ADAPTIVE_SAMPLING_FILES} ${JEFAST_FILES} ${DATABASE_TABLES} ${UTILITY_FILES})
 #target_link_libraries(iid_test ${CMAKE_THREAD_LIBS_INIT})
 
-ADD_EXECUTABLE(generic_sample_test generic_sample_test.cpp ${ADAPTIVE_SAMPLING_FILES} ${JEFAST_FILES} ${DATABASE_TABLES} ${UTILITY_FILES})
+#ADD_EXECUTABLE(generic_sample_test generic_sample_test.cpp ${ADAPTIVE_SAMPLING_FILES} ${JEFAST_FILES} ${DATABASE_TABLES} ${UTILITY_FILES})
 
 #ADD_EXECUTABLE(condition_sample_test condition_sample_test.cpp ${ADAPTIVE_SAMPLING_FILES} ${JEFAST_FILES} ${DATABASE_TABLES} ${UTILITY_FILES})
 
