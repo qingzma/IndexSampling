@@ -229,3 +229,71 @@ const std::vector<jfkey_t>::iterator Table_Supplier::get_key_iterator(int column
         throw runtime_error("The specified row is not of int64 type");
     }
 }
+
+std::shared_ptr < complex_key_index > Table_Supplier::get_complex_key_index(int columnL, int columnR) {
+    if ((columnL == S_NATIONKEY) && (columnR == S_SUPPKEY)) {
+        build_nation_supp_index();
+        return m_nationSuppIndex;
+    } else {
+        throw runtime_error("The requested columns does not have this type of index");
+    }
+}
+
+void Table_Supplier::build_nation_supp_index() {
+    if (m_nationSuppIndex != nullptr)
+        return;
+    m_nationSuppIndex.reset(new complex_key_index());
+
+    int64_t index  = 0;
+
+    for (jfkey_t nation_i: m_nationkey){
+        std::tuple<jfkey_t,jfkey_t> complexKey(nation_i, m_suppkey[index]);
+        m_nationSuppIndex->emplace(complexKey,index);
+        index ++;
+    }
+
+//    complex_key_index::const_iterator it;
+//    for (it = m_nationSuppIndex.get()->begin();it!=m_nationSuppIndex.get()->end();++it){
+//        std::cout<<"<"<<std::get<0>(it->first)<<","<<std::get<1>(it->first)<<"> "<<it->second<<std::endl;
+//    }
+}
+
+
+void Table_Supplier::build_nation_supp_relation_index() {
+    if (m_nationSuppRelationIndex != nullptr)
+        return;
+    m_nationSuppRelationIndex.reset(new join_attributes_relation_index());
+
+    int64_t index  = 0;
+
+    for (jfkey_t nation_i: m_nationkey){
+        if (m_nationSuppRelationIndex->count(nation_i)==0){
+            std::set<int64_t> seti{m_suppkey[index]};
+            m_nationSuppRelationIndex->emplace(nation_i,seti);
+        }else{
+            m_nationSuppRelationIndex->at(nation_i).insert(m_suppkey[index]);
+        }
+
+        index ++;
+    }
+
+    join_attributes_relation_index::const_iterator it;
+    for (it = m_nationSuppRelationIndex.get()->begin();it!=m_nationSuppRelationIndex.get()->end();++it){
+        std::cout<<"<"<<it->first<<"> ";
+        for (auto item:it->second){
+            std::cout<<item<<",";
+        }
+        std::cout<<std::endl;
+    }
+}
+
+
+std::shared_ptr< join_attributes_relation_index > Table_Supplier::get_join_attribute_relation_index(int columnL,
+                                                                                                  int columnR) {
+    if ((columnL == S_NATIONKEY) && (columnR == S_SUPPKEY)) {
+        build_nation_supp_relation_index();
+        return m_nationSuppRelationIndex;
+    } else {
+        throw runtime_error("The requested columns does not have join attribute relation index");
+    }
+}

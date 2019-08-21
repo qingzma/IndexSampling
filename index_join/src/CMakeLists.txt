@@ -61,7 +61,8 @@ set(UTILITY_FILES
 	util/accumulator.h
 	util/joinSettings.cpp
 	util/joinSettings.h
-)
+	util/StringSplitter.h
+		)
 
 set(DATABASE_FILES
 	)

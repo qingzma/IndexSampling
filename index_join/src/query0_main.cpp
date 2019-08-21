@@ -353,12 +353,12 @@ int64_t pseudoIndexJoin(std::string outfile, std::vector<std::shared_ptr<jefastF
         Table1_hash[Table_1->get_int64(f1_enu->getValue(), table1Index2)].push_back(f1_enu->getValue());
     }
 
-    for (auto elem : Table1_hash){
-        for (auto item_in_vector: elem.second){
-            std::cout<<elem.first<<", "<<item_in_vector<<std::endl;
-        }
-
-    }
+//    for (auto elem : Table1_hash){
+//        for (auto item_in_vector: elem.second){
+//            std::cout<<elem.first<<", "<<item_in_vector<<std::endl;
+//        }
+//
+//    }
 
     // build the hash for table 2.  All matched elements from table 1 hash will be emitted
     // the tuple has the form <index from table 1, index for table 2> for all matching tuple
@@ -372,14 +372,13 @@ int64_t pseudoIndexJoin(std::string outfile, std::vector<std::shared_ptr<jefastF
         }
     }
 
-    for (auto elem : Table2_hash){
-        std::cout<<elem.first<<", <";
-        for (auto item_in_vector: elem.second){
-            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<"), ";
-        }
-        std::cout<<">"<<std::endl;
-
-    }
+//    for (auto elem : Table2_hash){
+//        std::cout<<elem.first<<", <";
+//        for (auto item_in_vector: elem.second){
+//            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<"), ";
+//        }
+//        std::cout<<">"<<std::endl;
+//    }
 
     // build the hash for table 3.  All matched elements from table 2 hash will be emitted.
     std::map<jfkey_t, std::vector<std::tuple<int64_t, int64_t, int64_t> > > Table3_hash;
@@ -392,14 +391,14 @@ int64_t pseudoIndexJoin(std::string outfile, std::vector<std::shared_ptr<jefastF
         }
     }
 
-    for (auto elem : Table3_hash){
-        std::cout<<elem.first<<", <";
-        for (auto item_in_vector: elem.second){
-            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<","<<std::get<2>(item_in_vector)<<"), ";
-        }
-        std::cout<<">"<<std::endl;
-
-    }
+//    for (auto elem : Table3_hash){
+//        std::cout<<elem.first<<", <";
+//        for (auto item_in_vector: elem.second){
+//            std::cout<<"("<<std::get<0>(item_in_vector)<<","<<std::get<1>(item_in_vector)<<","<<std::get<2>(item_in_vector)<<"), ";
+//        }
+//        std::cout<<">"<<std::endl;
+//
+//    }
 
     // build the hash for table 4?  No, we can just emit when we find a match in this case.
     //int64_t Table_4_count = Table_4->row_count();
@@ -450,6 +449,9 @@ void setup_data() {
         supplier_table->get_key_index(Table_Supplier::S_NATIONKEY);
         supplier_table->get_key_index(Table_Supplier::S_SUPPKEY);
         partssupp_table->get_key_index(Table_Partsupp::PS_SUPPKEY);
+
+        nation_table->get_complex_key_index(Table_Nation::N_REGIONKEY,Table_Nation::N_NATIONKEY);
+        supplier_table->get_complex_key_index(Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY);
     }
     // filtering conditions
 
@@ -647,39 +649,48 @@ int main(int argc, char** argv) {
 
     // do index join
     if (query0Settings.buildPseudoIndex){
-        std::vector<std::shared_ptr<jefastFilter> > filters(4);
-        filters.at(0) = std::shared_ptr<jefastFilter>(new all_jefastFilter(region_table, Table_Region::R_REGIONKEY));
-        filters.at(1) = std::shared_ptr<jefastFilter>(new all_jefastFilter(nation_table, Table_Nation::N_NATIONKEY));
-        filters.at(2) = std::shared_ptr<jefastFilter>(new all_jefastFilter(supplier_table, Table_Supplier::S_SUPPKEY));
-        filters.at(3) = std::shared_ptr<jefastFilter>(new all_jefastFilter(partssupp_table, Table_Partsupp::PS_PARTKEY));
-
-        timer.reset();
-        timer.start();
-        auto count = pseudoIndexJoin("query0_pseudo.txt", filters);
-        timer.stop();
-        std::cout << "pseudo join took " << timer.getMilliseconds() << " milliseconds with cardinality " << count << std::endl;
-        data_map->appendArray("full_join", long(timer.getMilliseconds()));
-        data_map->appendArray("full_join_cadinality", count);
-//        std::cout<<"Start building pseudo index ..."<<std::endl;
+//        std::vector<std::shared_ptr<jefastFilter> > filters(4);
+//        filters.at(0) = std::shared_ptr<jefastFilter>(new all_jefastFilter(region_table, Table_Region::R_REGIONKEY));
+//        filters.at(1) = std::shared_ptr<jefastFilter>(new all_jefastFilter(nation_table, Table_Nation::N_NATIONKEY));
+//        filters.at(2) = std::shared_ptr<jefastFilter>(new all_jefastFilter(supplier_table, Table_Supplier::S_SUPPKEY));
+//        filters.at(3) = std::shared_ptr<jefastFilter>(new all_jefastFilter(partssupp_table, Table_Partsupp::PS_PARTKEY));
+//
 //        timer.reset();
 //        timer.start();
-//        PseudoIndexBuilder pseudoIndexBuilder;
-//
-//        pseudoIndexBuilder.AppendTable(region_table, -1, Table_Region::R_REGIONKEY, 0);
-//        pseudoIndexBuilder.AppendTable(nation_table, Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY, 1);
-//        pseudoIndexBuilder.AppendTable(supplier_table, Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY, 2);
-//        pseudoIndexBuilder.AppendTable(partssupp_table, Table_Partsupp::PS_SUPPKEY, -1, 3);
-//
-//        auto count = exactJoinNoIndex("query0_full.txt", filters);
-//
-//
-//        pseudoIndexBuilder.Build();
-//
+//        auto count = pseudoIndexJoin("query0_pseudo.txt", filters);
 //        timer.stop();
-//
-//
-//        std::cout << "building pseudo index took " << timer.getMilliseconds() << " milliseconds with cardinality " << "NEED FIXED" << std::endl;
-//        data_map->appendArray("pseudo index built ", long(timer.getMilliseconds()));
+//        std::cout << "pseudo join took " << timer.getMilliseconds() << " milliseconds with cardinality " << count << std::endl;
+//        data_map->appendArray("full_join", long(timer.getMilliseconds()));
+//        data_map->appendArray("full_join_cadinality", count);
+        std::cout<<"Start building pseudo index ..."<<std::endl;
+        timer.reset();
+        timer.start();
+
+        nation_table->get_join_attribute_relation_index(Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY);
+        supplier_table->get_join_attribute_relation_index( Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY);
+
+
+        PseudoIndexBuilder pseudoIndexBuilder;
+
+//        std::cout<<"-1,"<<Table_Region::R_REGIONKEY<<std::endl;
+
+        pseudoIndexBuilder.AppendTable(region_table, -1, Table_Region::R_REGIONKEY, 0);
+        pseudoIndexBuilder.AppendTable(nation_table, Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY, 1);
+        pseudoIndexBuilder.AppendTable(supplier_table, Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY, 2);
+        pseudoIndexBuilder.AppendTable(partssupp_table, Table_Partsupp::PS_SUPPKEY, -1, 3);
+
+
+
+//        auto count = exactJoinNoIndex("query0_full.txt", filters);
+
+
+        pseudoIndexBuilder.Build();
+
+        timer.stop();
+
+
+        std::cout << "building pseudo index took " << timer.getMilliseconds() << " milliseconds with cardinality " << "NEED FIXED" << std::endl;
+        data_map->appendArray("pseudo index built ", long(timer.getMilliseconds()));
     }
 
     // do a 10% sample using jefast

@@ -43,6 +43,10 @@ public:
 
     std::shared_ptr < key_index > get_key_index(int column);
 
+    std::shared_ptr < complex_key_index > get_complex_key_index(int columnL, int columnR);
+
+    std::shared_ptr< join_attributes_relation_index > get_join_attribute_relation_index(int columnL, int columnR);
+
     std::shared_ptr< float_index > get_float_index(int column);
 
     const std::vector<jfkey_t>::iterator get_key_iterator(int column);
@@ -57,6 +61,8 @@ public:
 private:
     void build_Supp_index();
     void build_Nation_index();
+    void build_nation_supp_index();
+    void build_nation_supp_relation_index();
 
     void build_acctbal_index();
 
@@ -76,6 +82,8 @@ private:
 
     std::shared_ptr< key_index > m_suppindex;
     std::shared_ptr< key_index > m_nationindex;
+    std::shared_ptr< complex_key_index > m_nationSuppIndex;
+    std::shared_ptr< join_attributes_relation_index > m_nationSuppRelationIndex;
 
     std::shared_ptr< float_index > mp_acctbalindex;
 };

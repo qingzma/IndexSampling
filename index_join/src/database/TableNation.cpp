@@ -122,6 +122,55 @@ void Table_Nation::build_region_index()
     }
 }
 
+void Table_Nation::build_region_nation_index() {
+    if (mp_region_nation_index != nullptr)
+        return;
+    mp_region_nation_index.reset(new complex_key_index());
+
+    int64_t index  = 0;
+
+    for (jfkey_t region_i: mp_regionkey){
+        std::tuple<jfkey_t,jfkey_t> complexKey(region_i, mp_nationkey[index]);
+        mp_region_nation_index->emplace(complexKey,index);
+        index ++;
+    }
+
+//    complex_key_index::const_iterator it;
+//    for (it = mp_region_nation_index.get()->begin();it!=mp_region_nation_index.get()->end();++it){
+//        std::cout<<"<"<<std::get<0>(it->first)<<","<<std::get<1>(it->first)<<"> "<<it->second<<std::endl;
+//    }
+}
+
+void Table_Nation::build_region_nation_relation_index() {
+    if (mp_region_nation_relation_index != nullptr)
+        return;
+    mp_region_nation_relation_index.reset(new join_attributes_relation_index());
+
+    int64_t index  = 0;
+
+    for (jfkey_t region_i: mp_regionkey){
+//        mp_region_nation_relation_index->at(region_i).insert(mp_nationkey[index]);
+
+
+        if (mp_region_nation_relation_index->count(region_i)==0){
+            std::set<int64_t> seti{mp_nationkey[index]};
+            mp_region_nation_relation_index->emplace(region_i,seti);
+        }else{
+            mp_region_nation_relation_index->at(region_i).insert(mp_nationkey[index]);
+        }
+        index ++;
+    }
+
+    join_attributes_relation_index::const_iterator it;
+    for (it = mp_region_nation_relation_index.get()->begin();it!=mp_region_nation_relation_index.get()->end();++it){
+        std::cout<<"<"<<it->first<<"> ";
+        for (auto item:it->second){
+            std::cout<<item<<",";
+        }
+        std::cout<<std::endl;
+    }
+}
+
 std::shared_ptr < key_index > Table_Nation::get_key_index(int column) {
     switch (column) {
     case 0:
@@ -146,3 +195,28 @@ const std::vector<jfkey_t>::iterator Table_Nation::get_key_iterator(int column)
         throw runtime_error("The requested column is not the requested type");
     }
 }
+
+
+
+
+
+std::shared_ptr < complex_key_index > Table_Nation::get_complex_key_index(int columnL, int columnR) {
+    if ((columnL == N_REGIONKEY) && (columnR == N_NATIONKEY)) {
+        build_region_nation_index();
+        return mp_region_nation_index;
+    } else {
+        throw runtime_error("The requested columns does not have this type of index");
+    }
+}
+
+std::shared_ptr< join_attributes_relation_index > Table_Nation::get_join_attribute_relation_index(int columnL,
+                                                                                                  int columnR) {
+    if ((columnL == N_REGIONKEY) && (columnR == N_NATIONKEY)) {
+        build_region_nation_relation_index();
+        return mp_region_nation_relation_index;
+    } else {
+        throw runtime_error("The requested columns does not have join attribute relation index");
+    }
+}
+
+

@@ -47,3 +47,11 @@ const std::vector<jfkey_t>::iterator Table::get_key_iterator(int column)
 {
     return std::vector<jfkey_t>::iterator();
 }
+
+std::shared_ptr < complex_key_index > Table::get_complex_key_index(int columnL, int columnR) {
+    throw runtime_error("No columns have an index of this type");
+}
+
+std::shared_ptr< join_attributes_relation_index > Table::get_join_attribute_relation_index(int columnL, int columnR) {
+    throw runtime_error("No columns have an index of this type");
+}

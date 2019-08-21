@@ -16,6 +16,8 @@
 #include "Table.h"
 
 
+
+
 class PseudoIndexBuilder {
 public:
     PseudoIndexBuilder();
@@ -30,6 +32,7 @@ private:
     std::vector<std::shared_ptr<Table> > m_joinedTables;
     std::vector<int> m_LHSJoinIndex;
     std::vector<int> m_RHSJoinIndex;
+    std::map<std::string, int64_t> m_join_counts;
 };
 
 

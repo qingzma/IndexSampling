@@ -40,6 +40,10 @@ public:
     std::shared_ptr < key_index > get_key_index(int column);
 
     const std::vector<jfkey_t>::iterator get_key_iterator(int column);
+    std::shared_ptr < complex_key_index > get_complex_key_index(int columnL, int columnR);
+
+    std::shared_ptr< join_attributes_relation_index > get_join_attribute_relation_index(int columnL, int columnR);
+
 public:
     static const int N_NATIONKEY = 0;
     static const int N_NAME      = 1;
@@ -48,6 +52,13 @@ public:
 private:
     void build_nation_index();
     void build_region_index();
+    void build_region_nation_index();
+
+    void build_region_nation_relation_index();
+
+//    void display(std::shared_ptr< key_index> index);
+
+//    void display(std::shared_ptr< complex_key_index> index);
 
     struct dummy {
         char str[26];
@@ -59,4 +70,7 @@ private:
 
     std::shared_ptr< key_index > mp_nationindex;
     std::shared_ptr< key_index > mp_regionindex;
+    std::shared_ptr< complex_key_index > mp_region_nation_index;
+
+    std::shared_ptr< join_attributes_relation_index > mp_region_nation_relation_index;
 };
