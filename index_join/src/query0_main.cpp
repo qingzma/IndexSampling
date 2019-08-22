@@ -681,7 +681,7 @@ int main(int argc, char** argv) {
         timer.reset();
         timer.start();
 
-        pseudoIndexBuilder.Sample(10);
+        pseudoIndexBuilder.Sample(1);
 
         timer.stop();
 

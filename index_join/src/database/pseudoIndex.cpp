@@ -9,10 +9,12 @@
 #include "../util/StringSplitter.h"
 
 #include <iostream>
+#include <regex>
 
 
 PseudoIndexBuilder::PseudoIndexBuilder() {
     m_join_counts={};
+    m_join_counts_acc={};
 }
 
 int PseudoIndexBuilder::AppendTable(std::shared_ptr<Table> table, int RHSIndex, int LHSIndex, int tableNumber) {
@@ -24,7 +26,7 @@ int PseudoIndexBuilder::AppendTable(std::shared_ptr<Table> table, int RHSIndex, 
 }
 
 void PseudoIndexBuilder::Build(){
-    int n_tables = m_LHSJoinIndex.size();
+    n_tables = m_LHSJoinIndex.size();
 
     if (m_RHSJoinIndex.at(0) != -1 || m_LHSJoinIndex.at(n_tables-1) != -1){
         std::cout<<m_LHSJoinIndex.at(0)<<m_RHSJoinIndex.at(n_tables-1)<<std::endl;
@@ -92,11 +94,19 @@ void PseudoIndexBuilder::Build(){
 
     m_join_counts = new_join_counts;
 
+    m_join_counts_acc[0] = std::pair<std::string, int64_t>{"non_index", m_cadinality};
     m_cadinality = 0;
+    int index = 1;
     for (auto item: m_join_counts){
-//        std::cout<<item.first<<","<<item.second<<std::endl;
+        /* std::cout<<item.first<<","<<item.second<<std::endl;*/
         m_cadinality += item.second;
+        m_join_counts_acc[index] = std::pair<std::string, int64_t>{item.first, m_cadinality};
+        index ++;
     }
+
+    /*for (auto value:m_join_counts_acc){
+        std::cout<<value.first<<","<<value.second<<std::endl;
+    }*/
 };
 
 int64_t PseudoIndexBuilder::getCardinality() {
@@ -111,7 +121,7 @@ void PseudoIndexBuilder::Sample(int sampleSize) {
     /* Random number generator */
     std::default_random_engine generator(rd());
     /* Distribution on which to apply the generator */
-    std::uniform_int_distribution<int64_t > distribution(0,m_cadinality);
+    std::uniform_int_distribution<int64_t > distribution(1,m_cadinality);
     /* fill the set with random number. */
     for( int i=0;i <sampleSize;i++){
         numbers.insert(distribution(generator));
@@ -123,9 +133,73 @@ void PseudoIndexBuilder::Sample(int sampleSize) {
 
 
     for (int64_t number:numbers){
-        
+        getJoinIndexItem(number);
     }
 
 
 };
 
+
+PseudoIndexBuilder::JoinIndexItem PseudoIndexBuilder::getJoinIndexItem(int64_t num) {
+
+    /*std::cout<<num<<std::endl;*/
+    int l = 0;
+    int r = m_join_counts_acc.size()-1;
+
+    int targetIndex;
+
+    // iterative Binary Search
+    while (l <= r) {
+        int m = l + (r - l) / 2;
+
+        // Check if num is present at mid
+        if (std::get<1>(m_join_counts_acc[m]) >= num &&
+                std::get<1>(m_join_counts_acc[m-1]) <    num){
+            targetIndex = m;
+            /*std::cout<<"target index is  "<<targetIndex<<std::endl;*/
+            break;
+        }
+
+
+        // If num greater, ignore left half
+        if (std::get<1>(m_join_counts_acc[m]) < num){
+            l = m + 1;
+            /*std::cout<<"left is changed to "<<l<<std::endl;*/
+        }
+            // If num is smaller, ignore right half
+        else{
+            r = m - 1 ;
+            /*std::cout<<"right is changed to "<<r<<std::endl;*/
+        }
+
+    }
+    /* std::cout<<targetIndex<<", "<<std::get<0>(m_join_counts_acc[targetIndex])<<", "<<std::get<1>(m_join_counts_acc[targetIndex])<<std::endl;*/
+
+    std::string comIndex =  std::get<0>(m_join_counts_acc[targetIndex]);
+    /*std::cout<<comIndex<<std::endl;*/
+    comIndex = std::regex_replace(comIndex, std::regex("-"), "");
+    comIndex = std::regex_replace(comIndex, std::regex("_"), "");
+    /*std::cout<<comIndex<<std::endl;*/
+
+    std::vector<std::string> splitter = StringSplitter::split(comIndex,"\\$");
+
+    JoinIndexItem joinIndexItem {};
+    joinIndexItem.tag = targetIndex;    /*std::get<0>(m_join_counts_acc[targetIndex]);*/
+    joinIndexItem.offsetNum = std::get<1>(m_join_counts_acc[targetIndex]) - num;
+    joinIndexItem.leftKey = std::stoi(splitter.at(0));
+    joinIndexItem.rightKey = std::stoi(splitter.at(splitter.size()-1));
+
+    std::vector<std::tuple<int64_t , int64_t >> midKeys{};
+    for (int i =0;i < splitter.size()-1; i++){
+        midKeys.push_back(std::make_tuple(std::stoi(splitter.at(i)),std::stoi(splitter.at(i+1))));
+    }
+    joinIndexItem.midKeys = midKeys;
+
+    /*std::cout<<joinIndexItem.leftKey<<std::endl;
+    for (auto value:midKeys){
+        std::cout<<std::get<0>(value)<<","<<std::get<1>(value)<<std::endl;
+    }
+    std::cout<<joinIndexItem.rightKey<<std::endl;*/
+
+    return joinIndexItem;
+}

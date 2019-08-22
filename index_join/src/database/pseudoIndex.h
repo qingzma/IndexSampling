@@ -30,13 +30,27 @@ public:
     int64_t getCardinality();
 
 private:
+    int n_tables;
     int sampleSize;
     std::vector<std::shared_ptr<Table> > m_joinedTables;
     std::vector<int> m_LHSJoinIndex;
     std::vector<int> m_RHSJoinIndex;
     std::map<std::string, int64_t> m_join_counts;
+
+    std::map<int64_t , std::pair<std::string, int64_t >> m_join_counts_acc;
+
     int64_t m_cadinality;
 
+    struct JoinIndexItem{
+        int64_t tag;            /* the complex index key*/
+        std::int64_t offsetNum;     /* record the offset from the right most record.*/
+        int64_t leftKey;
+        std::vector<std::tuple<int64_t , int64_t >> midKeys;
+        int64_t  rightKey;
+    };
+
+private:
+    JoinIndexItem getJoinIndexItem(int64_t num);
 
 };
 
