@@ -10,11 +10,13 @@
 
 #include <iostream>
 #include <regex>
+#include <fstream>
 
 
 PseudoIndexBuilder::PseudoIndexBuilder() {
     m_join_counts={};
     m_join_counts_acc={};
+    m_sampleIndexContainer={};
 }
 
 int PseudoIndexBuilder::AppendTable(std::shared_ptr<Table> table, int RHSIndex, int LHSIndex, int tableNumber) {
@@ -131,10 +133,19 @@ void PseudoIndexBuilder::Sample(int sampleSize) {
         numbers.insert(distribution(generator));
     }
 
-
     for (int64_t number:numbers){
-        getJoinIndexItem(number);
+        JoinIndexItem joinIndexItem = getJoinIndexItem(number);
+
+        if (m_sampleIndexContainer.count(joinIndexItem.tag) ==0){
+            std::vector<JoinIndexItem> item {joinIndexItem};
+            m_sampleIndexContainer[joinIndexItem.tag] = item;
+        }
+        else{
+            m_sampleIndexContainer[joinIndexItem.tag].push_back(joinIndexItem);
+        }
     }
+
+    fetchJoinTuples("pseudoSample.txt");
 
 
 };
@@ -202,4 +213,29 @@ PseudoIndexBuilder::JoinIndexItem PseudoIndexBuilder::getJoinIndexItem(int64_t n
     std::cout<<joinIndexItem.rightKey<<std::endl;*/
 
     return joinIndexItem;
+}
+
+
+void PseudoIndexBuilder::fetchJoinTuples(std::string outfile) {
+    std::ofstream output_file(outfile, std::ios::out | std::ofstream::app);
+
+
+    for (auto i:m_sampleIndexContainer){
+        for (JoinIndexItem joinIndexItem:i.second) {
+            output_file << fetchJoinTupleRandom(joinIndexItem) << '\n';
+        }
+    }
+    output_file.close();
+}
+
+std::string PseudoIndexBuilder::fetchJoinTupleRandom(JoinIndexItem joinIndexItem) {
+    std::string outStr= "";
+    /*outStr += std::to_string(joinIndexItem.leftKey);*/
+
+    outStr += "  " + std::to_string(std::get<0>(joinIndexItem.midKeys.at(0)));
+    for (auto value:joinIndexItem.midKeys){
+        outStr += "  " +std::to_string(std::get<1>(value));
+    }
+
+    return outStr;
 }

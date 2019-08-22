@@ -675,13 +675,13 @@ int main(int argc, char** argv) {
         data_map->appendArray("pseudo index built ", long(timer.getMilliseconds()));
     }
 
-    // do a 10% sample using jefast
+    // do a 10% sample using pseudoIndex
     if(query0Settings.pseudoIndexJoin)
     {
         timer.reset();
         timer.start();
 
-        pseudoIndexBuilder.Sample(1);
+        pseudoIndexBuilder.Sample(8000);
 
         timer.stop();
 

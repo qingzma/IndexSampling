@@ -49,8 +49,12 @@ private:
         int64_t  rightKey;
     };
 
+    std::map<int64_t, std::vector<JoinIndexItem>> m_sampleIndexContainer;
+
 private:
     JoinIndexItem getJoinIndexItem(int64_t num);
+    void fetchJoinTuples(std::string outfile);
+    std::string fetchJoinTupleRandom(JoinIndexItem joinIndexItem);
 
 };
 
