@@ -161,14 +161,6 @@ void Table_Nation::build_region_nation_relation_index() {
         index ++;
     }
 
-    join_attributes_relation_index::const_iterator it;
-    for (it = mp_region_nation_relation_index.get()->begin();it!=mp_region_nation_relation_index.get()->end();++it){
-        std::cout<<"<"<<it->first<<"> ";
-        for (auto item:it->second){
-            std::cout<<item<<",";
-        }
-        std::cout<<std::endl;
-    }
 }
 
 std::shared_ptr < key_index > Table_Nation::get_key_index(int column) {

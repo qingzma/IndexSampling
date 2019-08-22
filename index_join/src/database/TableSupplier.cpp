@@ -277,14 +277,14 @@ void Table_Supplier::build_nation_supp_relation_index() {
         index ++;
     }
 
-    join_attributes_relation_index::const_iterator it;
-    for (it = m_nationSuppRelationIndex.get()->begin();it!=m_nationSuppRelationIndex.get()->end();++it){
-        std::cout<<"<"<<it->first<<"> ";
-        for (auto item:it->second){
-            std::cout<<item<<",";
-        }
-        std::cout<<std::endl;
-    }
+//    join_attributes_relation_index::const_iterator it;
+//    for (it = m_nationSuppRelationIndex.get()->begin();it!=m_nationSuppRelationIndex.get()->end();++it){
+//        std::cout<<"<"<<it->first<<"> ";
+//        for (auto item:it->second){
+//            std::cout<<item<<",";
+//        }
+//        std::cout<<std::endl;
+//    }
 }
 
 

@@ -12,6 +12,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <random>
 
 #include "Table.h"
 
@@ -25,7 +26,8 @@ public:
     ~PseudoIndexBuilder(){};
     int AppendTable(std::shared_ptr<Table> table, int RHSIndex, int LHSIndex, int tableNumber);
     void Build();
-    std::string Sample();
+    void Sample(int sampleSize);
+    int64_t getCardinality();
 
 private:
     int sampleSize;
@@ -33,6 +35,9 @@ private:
     std::vector<int> m_LHSJoinIndex;
     std::vector<int> m_RHSJoinIndex;
     std::map<std::string, int64_t> m_join_counts;
+    int64_t m_cadinality;
+
+
 };
 
 
