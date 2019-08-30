@@ -428,12 +428,26 @@ void PseudoIndexBuilder::fetchJoinTuples(std::string outfile) {
 void PseudoIndexBuilder::fetchJoinTuples(std::string outfile, JoinOutputColumnContainer joinOutputColumnContainer) {
     std::ofstream output_file(outfile, std::ios::out | std::ofstream::app);
 
+    Timer timer0, timer1;
+    double t0=0, t1=0;
     for (auto i:m_sampleIndexContainer){
         for (JoinIndexItem joinIndexItem:i.second) {
+            timer0.reset();
+            timer0.start();
             JoinIndexItemIndexes index = getJoinIndexItemIndexes(joinIndexItem);
+            timer0.stop();
+            t0+=timer0.getMicroseconds();
+
+            timer1.reset();
+            timer1.start();
             output_file << fetchJoinTupleUsingIndex(index, joinOutputColumnContainer, joinIndexItem.pseudoIndex) << '\n';
+            timer1.stop();
+            t1+=timer1.getMilliseconds();
+
         }
     }
+    std::cout<<"index locating time cost: "<<t0<<std::endl;
+    std::cout<<"tuple locating time cost: "<<t1<<std::endl;
     output_file.close();
 }
 
