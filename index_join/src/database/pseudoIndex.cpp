@@ -289,11 +289,11 @@ JoinIndexItemIndexes PseudoIndexBuilder::getJoinIndexItemIndexes(PseudoIndexBuil
     counts[n_tables-1] = tableRIndex->count(joinIndexItem.rightKey);
 
 
-    counts ={};
+    /*counts ={};
     counts.emplace(0,2);
     counts.emplace(1,3);
     counts.emplace(2,4);
-    counts.emplace(3,5);
+    counts.emplace(3,5);*/
 
 
     int64_t total_count=1;
@@ -304,7 +304,7 @@ JoinIndexItemIndexes PseudoIndexBuilder::getJoinIndexItemIndexes(PseudoIndexBuil
     /*std::cout<<std::endl;*/
 
     int64_t position = total_count - joinIndexItem.offsetNum;
-    position = 75;
+    /*position = 75;*/
 
 
     reverse_acc_counts[n_tables-1 ] = counts[n_tables-1];
