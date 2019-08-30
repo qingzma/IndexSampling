@@ -125,7 +125,7 @@ void Table_Nation::build_region_index()
 void Table_Nation::build_region_nation_index() {
     if (mp_region_nation_index != nullptr)
         return;
-    mp_region_nation_index.reset(new complex_key_index());
+    mp_region_nation_index.reset(new composite_key_index());
 
     int64_t index  = 0;
 
@@ -192,7 +192,7 @@ const std::vector<jfkey_t>::iterator Table_Nation::get_key_iterator(int column)
 
 
 
-std::shared_ptr < complex_key_index > Table_Nation::get_complex_key_index(int columnL, int columnR) {
+std::shared_ptr < composite_key_index > Table_Nation::get_composite_key_index(int columnL, int columnR) {
     if ((columnL == N_REGIONKEY) && (columnR == N_NATIONKEY)) {
         build_region_nation_index();
         return mp_region_nation_index;

@@ -230,7 +230,7 @@ const std::vector<jfkey_t>::iterator Table_Supplier::get_key_iterator(int column
     }
 }
 
-std::shared_ptr < complex_key_index > Table_Supplier::get_complex_key_index(int columnL, int columnR) {
+std::shared_ptr < composite_key_index > Table_Supplier::get_composite_key_index(int columnL, int columnR) {
     if ((columnL == S_NATIONKEY) && (columnR == S_SUPPKEY)) {
         build_nation_supp_index();
         return m_nationSuppIndex;
@@ -242,7 +242,7 @@ std::shared_ptr < complex_key_index > Table_Supplier::get_complex_key_index(int 
 void Table_Supplier::build_nation_supp_index() {
     if (m_nationSuppIndex != nullptr)
         return;
-    m_nationSuppIndex.reset(new complex_key_index());
+    m_nationSuppIndex.reset(new composite_key_index());
 
     int64_t index  = 0;
 

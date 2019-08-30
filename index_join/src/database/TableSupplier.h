@@ -43,7 +43,7 @@ public:
 
     std::shared_ptr < key_index > get_key_index(int column);
 
-    std::shared_ptr < complex_key_index > get_complex_key_index(int columnL, int columnR);
+    std::shared_ptr < composite_key_index > get_composite_key_index(int columnL, int columnR);
 
     std::shared_ptr< join_attributes_relation_index > get_join_attribute_relation_index(int columnL, int columnR);
 
@@ -82,7 +82,7 @@ private:
 
     std::shared_ptr< key_index > m_suppindex;
     std::shared_ptr< key_index > m_nationindex;
-    std::shared_ptr< complex_key_index > m_nationSuppIndex;
+    std::shared_ptr< composite_key_index > m_nationSuppIndex;
     std::shared_ptr< join_attributes_relation_index > m_nationSuppRelationIndex;
 
     std::shared_ptr< float_index > mp_acctbalindex;

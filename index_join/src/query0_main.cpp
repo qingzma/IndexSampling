@@ -31,6 +31,7 @@
 #include "database/jefastIndex.h"
 #include "database/jefastBuilder.h"
 #include "database/pseudoIndex.h"
+#include "database/JoinOutputColumnContainer.h"
 
 static std::shared_ptr<Table> region_table;
 static std::shared_ptr<Table> nation_table;
@@ -41,6 +42,7 @@ static std::shared_ptr<jefastIndexLinear> jefastIndex;
 static std::shared_ptr<FileKeyValue> data_map;
 
 static global_settings query0Settings;
+
 
 // Note, we will require a filter for each column.  It can just be an empty filter (an everything filter)
 // we will be doing a linear scan of the data to implement this algorithm for now.
@@ -450,8 +452,8 @@ void setup_data() {
         supplier_table->get_key_index(Table_Supplier::S_SUPPKEY);
         partssupp_table->get_key_index(Table_Partsupp::PS_SUPPKEY);
 
-        nation_table->get_complex_key_index(Table_Nation::N_REGIONKEY,Table_Nation::N_NATIONKEY);
-        supplier_table->get_complex_key_index(Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY);
+        nation_table->get_composite_key_index(Table_Nation::N_REGIONKEY,Table_Nation::N_NATIONKEY);
+        supplier_table->get_composite_key_index(Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY);
 
 
     }
@@ -659,9 +661,6 @@ int main(int argc, char** argv) {
         nation_table->get_join_attribute_relation_index(Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY);
         supplier_table->get_join_attribute_relation_index( Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY);
 
-
-
-
         pseudoIndexBuilder.AppendTable(region_table, -1, Table_Region::R_REGIONKEY, 0);
         pseudoIndexBuilder.AppendTable(nation_table, Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY, 1);
         pseudoIndexBuilder.AppendTable(supplier_table, Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY, 2);
@@ -676,12 +675,18 @@ int main(int argc, char** argv) {
     }
 
     // do a 10% sample using pseudoIndex
-    if(query0Settings.pseudoIndexJoin)
+    if(query0Settings.indexJoin)
     {
         timer.reset();
         timer.start();
 
-        pseudoIndexBuilder.Sample(8000);
+        JoinOutputColumnContainer joinOutputColumnContainer;
+        joinOutputColumnContainer.addColumn(0,Table_Region::R_NAME);
+        joinOutputColumnContainer.addColumn(1,Table_Nation::N_REGIONKEY);
+        joinOutputColumnContainer.addColumn(2,Table_Supplier::S_NATIONKEY);
+        joinOutputColumnContainer.addColumn(3,Table_Partsupp::PS_SUPPKEY);
+
+        pseudoIndexBuilder.Sample(100000,joinOutputColumnContainer);
 
         timer.stop();
 

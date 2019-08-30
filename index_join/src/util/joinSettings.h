@@ -21,7 +21,7 @@ struct global_settings {
     bool nonJoinAttribHash;
     bool nonJoinAttribJefast;
     bool jefastModify;
-    bool pseudoIndexJoin;
+    bool indexJoin;
 
     bool buildJefast;
     bool buildIndex;

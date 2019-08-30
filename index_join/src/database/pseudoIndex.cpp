@@ -57,7 +57,7 @@ void PseudoIndexBuilder::Build(){
     for (int table_count=1; table_count<n_tables-1;table_count++){
 //        std::cout<<"table count is "<< table_count<<std::endl;
 //        std::shared_ptr< key_index > tableIIndex = m_joinedTables.at(table_count)->get_key_index(m_RHSJoinIndex.at(table_count));
-        std::shared_ptr< complex_key_index > tableIComplexIndex = m_joinedTables.at(table_count)->get_complex_key_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
+        std::shared_ptr< composite_key_index > tableIComplexIndex = m_joinedTables.at(table_count)->get_composite_key_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
         std::shared_ptr< join_attributes_relation_index> tableIJoinIndex = m_joinedTables.at(table_count)->get_join_attribute_relation_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
 
         std::map<std::string, int64_t> new_join_counts{};
@@ -96,8 +96,9 @@ void PseudoIndexBuilder::Build(){
 
     m_join_counts = new_join_counts;
 
-    m_join_counts_acc[0] = std::pair<std::string, int64_t>{"non_index", m_cadinality};
     m_cadinality = 0;
+    m_join_counts_acc[0] = std::pair<std::string, int64_t>{"non_index", m_cadinality};
+
     int index = 1;
     for (auto item: m_join_counts){
         /* std::cout<<item.first<<","<<item.second<<std::endl;*/
@@ -147,13 +148,43 @@ void PseudoIndexBuilder::Sample(int sampleSize) {
 
     fetchJoinTuples("pseudoSample.txt");
 
-
 };
+
+void PseudoIndexBuilder::Sample(int sampleSize, JoinOutputColumnContainer joinOutputColumnContainer) {
+    /* create samples without replacement*/
+    std::set<int64_t > numbers{};
+    /* Seed */
+    std::random_device rd;
+    /* Random number generator */
+    std::default_random_engine generator(rd());
+    /* Distribution on which to apply the generator */
+    std::uniform_int_distribution<int64_t > distribution(1,m_cadinality);
+    /* fill the set with random number. */
+    for( int i=0;i <sampleSize;i++){
+        numbers.insert(distribution(generator));
+    }
+    /* make sure the sample size is as requested.*/
+    while(numbers.size()<sampleSize){
+        numbers.insert(distribution(generator));
+    }
+
+    for (int64_t number:numbers){
+        JoinIndexItem joinIndexItem = getJoinIndexItem(number);
+
+        if (m_sampleIndexContainer.count(joinIndexItem.tag) ==0){
+            std::vector<JoinIndexItem> item {joinIndexItem};
+            m_sampleIndexContainer[joinIndexItem.tag] = item;
+        }
+        else{
+            m_sampleIndexContainer[joinIndexItem.tag].push_back(joinIndexItem);
+        }
+    }
+
+    fetchJoinTuples("pseudoSample.txt",joinOutputColumnContainer);
+}
 
 
 PseudoIndexBuilder::JoinIndexItem PseudoIndexBuilder::getJoinIndexItem(int64_t num) {
-
-    /*std::cout<<num<<std::endl;*/
     int l = 0;
     int r = m_join_counts_acc.size()-1;
 
@@ -197,8 +228,10 @@ PseudoIndexBuilder::JoinIndexItem PseudoIndexBuilder::getJoinIndexItem(int64_t n
     JoinIndexItem joinIndexItem {};
     joinIndexItem.tag = targetIndex;    /*std::get<0>(m_join_counts_acc[targetIndex]);*/
     joinIndexItem.offsetNum = std::get<1>(m_join_counts_acc[targetIndex]) - num;
+    /*std::cout<<comIndex<<std::endl;*/
     joinIndexItem.leftKey = std::stoi(splitter.at(0));
     joinIndexItem.rightKey = std::stoi(splitter.at(splitter.size()-1));
+    joinIndexItem.pseudoIndex = num;
 
     std::vector<std::tuple<int64_t , int64_t >> midKeys{};
     for (int i =0;i < splitter.size()-1; i++){
@@ -212,7 +245,156 @@ PseudoIndexBuilder::JoinIndexItem PseudoIndexBuilder::getJoinIndexItem(int64_t n
     }
     std::cout<<joinIndexItem.rightKey<<std::endl;*/
 
+
+    getJoinIndexItemIndexes(joinIndexItem);
+
     return joinIndexItem;
+}
+
+JoinIndexItemIndexes PseudoIndexBuilder::getJoinIndexItemIndexes(PseudoIndexBuilder::JoinIndexItem joinIndexItem) {
+
+    std::map<int, int64_t > counts, reverse_acc_counts; /* counts of tuple in each group, [2,3,4,5], reverse_acc_counts [120,60,20,5]*/
+    std::map<int, int64_t > index_positions; /* for a location of 4, the corresponding index_position is [0,0,0,4] */
+    JoinIndexItemIndexes joinIndexItemIndexes;
+
+    auto table0= m_joinedTables.begin();
+    std::shared_ptr < key_index > table0Index = table0->get()->get_key_index(m_LHSJoinIndex.at(0));
+    counts[0] = table0Index->count(joinIndexItem.leftKey);
+
+
+    for (int table_count=1; table_count<n_tables-1;table_count++){
+        std::shared_ptr< composite_key_index > tableICompositeIndex = m_joinedTables.at(table_count)->get_composite_key_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
+        /*std::shared_ptr< join_attributes_relation_index> tableIJoinIndex = m_joinedTables.at(table_count)->get_join_attribute_relation_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));*/
+        std::tuple<int64_t , int64_t > composite_key = joinIndexItem.midKeys.at(table_count-1);
+        counts[table_count] = tableICompositeIndex->count(std::tuple<jfkey_t,jfkey_t>{std::get<0>(composite_key),std::get<1>(composite_key)});
+        /*std::cout<<counts[table_count]<<std::endl;*/
+    }
+
+    std::shared_ptr< key_index > tableRIndex = m_joinedTables.at(n_tables-1)->get_key_index(m_RHSJoinIndex.at(n_tables-1));
+    counts[n_tables-1] = tableRIndex->count(joinIndexItem.rightKey);
+
+
+    counts ={};
+    counts.emplace(0,2);
+    counts.emplace(1,3);
+    counts.emplace(2,4);
+    counts.emplace(3,5);
+
+
+    int64_t total_count=1;
+    for (auto value: counts){
+        total_count =  total_count*value.second;
+        /*std::cout<<value.second<<", ";*/
+    }
+    /*std::cout<<std::endl;*/
+
+    int64_t position = total_count - joinIndexItem.offsetNum;
+    position = 75;
+
+
+    reverse_acc_counts[n_tables-1 ] = counts[n_tables-1];
+    for (int i = n_tables -2; i>=0;i--){
+        reverse_acc_counts[i] = reverse_acc_counts[i+1]*counts[i];
+    }
+
+    /*for (auto value: reverse_acc_counts){
+        std::cout<<value.second<<"- ";
+    }
+    std::cout<<std::endl;*/
+
+    for(int i =0; i < n_tables-1; i++){
+        index_positions[i] = position / reverse_acc_counts[i+1];
+        position = position % reverse_acc_counts[i+1];
+    }
+    index_positions[n_tables - 1] = position % reverse_acc_counts[n_tables - 1];
+
+
+    /*std::cout<<"position is "<<position<<std::endl;
+    for (auto value: index_positions){
+        std::cout<<value.second<<"... ";
+    }
+    std::cout<<std::endl;*/
+
+
+
+    /* deal with the left most table */
+
+    auto rangeIter = table0Index->equal_range(joinIndexItem.leftKey);
+    if ( index_positions[0]==0){
+        joinIndexItemIndexes[0]=rangeIter.first->second;
+
+    }
+    else{
+        int64_t i=0;
+        auto it = rangeIter.first;
+        for (auto it = rangeIter.first; it != rangeIter.second; it++ ){
+            if (i < index_positions[0]){
+                i++;
+                /*std::cout<<"try to locate"<<std::endl;*/
+            }
+        }
+        joinIndexItemIndexes[0]= it->second;
+    }
+
+    /*std::cout<<"0 is "<<joinIndexItemIndexes[0]<<std::endl;*/
+
+
+
+
+
+    /* deal with the intermediate tables.*/
+    for (int table_count=1; table_count<n_tables-1;table_count++){
+        std::shared_ptr< composite_key_index > tableICompositeIndex = m_joinedTables.at(table_count)->get_composite_key_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
+        std::tuple<jfkey_t ,jfkey_t> key = joinIndexItem.midKeys.at(table_count-1);
+        auto ranges  = tableICompositeIndex->equal_range(key);
+
+        /* deal with one table per time*/
+        if ( index_positions[table_count]==0){
+            joinIndexItemIndexes[table_count]=ranges.first->second;
+
+        }
+        else{
+            int64_t i=0;
+            auto it = ranges.first;
+            for (auto it = ranges.first; it != ranges.second; it++ ){
+                if (i < index_positions[table_count]){
+                    i++;
+                    /*std::cout<<"try to locate"<<std::endl;*/
+                }
+            }
+            joinIndexItemIndexes[table_count]= it->second;
+        }
+
+        /*std::shared_ptr< join_attributes_relation_index> tableIJoinIndex = m_joinedTables.at(table_count)->get_join_attribute_relation_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));*/
+        /*counts[table_count] = tableICompositeIndex->count(std::tuple<jfkey_t,jfkey_t>{std::get<0>(composite_key),std::get<1>(composite_key)});*/
+        /*std::cout<<counts[table_count]<<std::endl;*/
+    }
+
+
+    /* deal with the right most table*/
+    rangeIter = tableRIndex->equal_range(joinIndexItem.rightKey);
+    if ( index_positions[n_tables-1]==0){
+        joinIndexItemIndexes[n_tables-1]=rangeIter.first->second;
+
+    }
+    else{
+        int64_t i=0;
+        auto it = rangeIter.first;
+        for (auto it = rangeIter.first; it != rangeIter.second; it++ ){
+            if (i < index_positions[n_tables-1]){
+                i++;
+                /*std::cout<<"try to locate"<<std::endl;*/
+            }
+        }
+        joinIndexItemIndexes[n_tables-1]= it->second;
+    }
+
+    /*std::cout<<"4th is "<<joinIndexItemIndexes[n_tables-1]<<std::endl;*/
+
+//    for (auto value : joinIndexItemIndexes){
+//        std::cout<<value.first<<", "<<value.second<<std::endl;
+//    }
+    return joinIndexItemIndexes;
 }
 
 
@@ -228,6 +410,19 @@ void PseudoIndexBuilder::fetchJoinTuples(std::string outfile) {
     output_file.close();
 }
 
+void PseudoIndexBuilder::fetchJoinTuples(std::string outfile, JoinOutputColumnContainer joinOutputColumnContainer) {
+    std::ofstream output_file(outfile, std::ios::out | std::ofstream::app);
+
+    for (auto i:m_sampleIndexContainer){
+        for (JoinIndexItem joinIndexItem:i.second) {
+            JoinIndexItemIndexes index = getJoinIndexItemIndexes(joinIndexItem);
+            output_file << fetchJoinTupleUsingIndex(index, joinOutputColumnContainer, joinIndexItem.pseudoIndex) << '\n';
+        }
+    }
+    output_file.close();
+}
+
+
 std::string PseudoIndexBuilder::fetchJoinTupleRandom(JoinIndexItem joinIndexItem) {
     std::string outStr= "";
     /*outStr += std::to_string(joinIndexItem.leftKey);*/
@@ -239,3 +434,35 @@ std::string PseudoIndexBuilder::fetchJoinTupleRandom(JoinIndexItem joinIndexItem
 
     return outStr;
 }
+
+std::string PseudoIndexBuilder::fetchJoinTupleUsingIndex(JoinIndexItemIndexes joinIndexItemIndexes, JoinOutputColumnContainer joinOutputColumnContainer) {
+    std::string outStr="";
+    for (auto joinOutput:*joinOutputColumnContainer.getContainer()){
+        /*std::cout<<"int table "<<std::endl;*/
+        for (int column: joinOutput.second){
+            /*std::cout<<"    int table columns:"<<column<<std::endl;*/
+            switch (m_joinedTables.at(joinOutput.first)->getColumnTypes(column)){
+                case DATABASE_DATA_TYPES::INT64 :
+                    outStr += std::to_string(m_joinedTables.at(joinOutput.first)->get_int64(joinIndexItemIndexes.at(joinOutput.first),column)) +",";
+                    break;
+                case DATABASE_DATA_TYPES::CHAR :
+                    std::string strs=m_joinedTables.at(joinOutput.first)->get_char(joinIndexItemIndexes.at(joinOutput.first),column);
+                    outStr += strs  + ',';
+                    break;
+                /*default:
+                    outStr += std::to_string(  m_joinedTables.at(joinOutput.first)->getColumnTypes(column)) + "unknown, ";
+                    break;*/
+            }
+
+        }
+    }
+    outStr.pop_back();
+    return outStr;
+}
+
+std::string PseudoIndexBuilder::fetchJoinTupleUsingIndex(JoinIndexItemIndexes joinIndexItemIndexes,
+                                                         JoinOutputColumnContainer joinOutputColumnContainer,
+                                                         int64_t pseudoIndex) {
+    return std::to_string(pseudoIndex)+","+fetchJoinTupleUsingIndex(joinIndexItemIndexes,joinOutputColumnContainer);
+}
+

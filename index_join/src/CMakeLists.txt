@@ -29,6 +29,7 @@ set(DATABASE_TABLES
 	database/TableLineitem.cpp
 	database/TableLineitem.h
     database/olkenIndex.h
+	database/JoinOutputColumnContainer.h
 )
 
 SET(JEFAST_FILES
