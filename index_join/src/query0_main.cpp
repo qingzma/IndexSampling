@@ -686,7 +686,8 @@ int main(int argc, char** argv) {
         joinOutputColumnContainer.addColumn(2,Table_Supplier::S_NATIONKEY);
         joinOutputColumnContainer.addColumn(3,Table_Partsupp::PS_SUPPKEY);
 
-        pseudoIndexBuilder.Sample(100000,joinOutputColumnContainer);
+        pseudoIndexBuilder.Sample(1000000);
+//        pseudoIndexBuilder.Sample(100000,joinOutputColumnContainer);
 
         timer.stop();
 
