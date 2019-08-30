@@ -442,7 +442,7 @@ void PseudoIndexBuilder::fetchJoinTuples(std::string outfile, JoinOutputColumnCo
             timer1.start();
             output_file << fetchJoinTupleUsingIndex(index, joinOutputColumnContainer, joinIndexItem.pseudoIndex) << '\n';
             timer1.stop();
-            t1+=timer1.getMilliseconds();
+            t1+=timer1.getMicroseconds();
 
         }
     }
