@@ -7,6 +7,7 @@
 
 #include "pseudoIndex.h"
 #include "../util/StringSplitter.h"
+#include "../util/Timer.h"
 
 #include <iostream>
 #include <regex>
@@ -125,6 +126,9 @@ void PseudoIndexBuilder::Sample(int sampleSize) {
     std::default_random_engine generator(rd());
     /* Distribution on which to apply the generator */
     std::uniform_int_distribution<int64_t > distribution(1,m_cadinality);
+    Timer timer;
+    timer.reset();
+    timer.start();
     /* fill the set with random number. */
     for( int i=0;i <sampleSize;i++){
         numbers.insert(distribution(generator));
@@ -146,11 +150,19 @@ void PseudoIndexBuilder::Sample(int sampleSize) {
         }
     }
 
+    timer.stop();
+    std::cout<<"it takes "<<timer.getMilliseconds()<<" milliseconds to create the random numbers, please remove them from the reported time cost."<<std::endl;
+
     fetchJoinTuples("pseudoSample.txt");
 
 };
 
 void PseudoIndexBuilder::Sample(int sampleSize, JoinOutputColumnContainer joinOutputColumnContainer) {
+
+    Timer timer;
+    timer.reset();
+    timer.start();
+
     /* create samples without replacement*/
     std::set<int64_t > numbers{};
     /* Seed */
@@ -179,6 +191,9 @@ void PseudoIndexBuilder::Sample(int sampleSize, JoinOutputColumnContainer joinOu
             m_sampleIndexContainer[joinIndexItem.tag].push_back(joinIndexItem);
         }
     }
+
+    timer.stop();
+    std::cout<<"it takes "<<timer.getMilliseconds()<<" milliseconds to create the random numbers, please remove them from the reported time cost."<<std::endl;
 
     fetchJoinTuples("pseudoSample.txt",joinOutputColumnContainer);
 }

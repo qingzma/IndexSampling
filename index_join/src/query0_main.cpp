@@ -516,7 +516,7 @@ int main(int argc, char** argv) {
     {
        timer.reset();
        timer.start();
-       auto toRequest = jefastIndex->GetTotal() / 10;
+       auto toRequest = jefastIndex->GetTotal() / 32;
        auto count = randomjefastJoin("query0_sample.txt", toRequest, jefastIndex);
        timer.stop();
 
