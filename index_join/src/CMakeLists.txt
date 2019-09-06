@@ -5,7 +5,11 @@ include_directories(../../third_party/)
 
 set(PSEUDO_INDEX
 		database/pseudoIndex.h
-		database/pseudoIndex.cpp)
+		database/pseudoIndex.cpp
+		database/pseudoIndexAdvanced.h
+		database/pseudoIndexAdvanced.cpp
+		database/JoinPath.h
+		database/PathIndexBuilder.h)
 
 set(DATABASE_TABLES
 	database/Table.cpp

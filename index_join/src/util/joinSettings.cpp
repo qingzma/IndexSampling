@@ -19,6 +19,7 @@ global_settings parse_args(int argc, char ** argv)
     TCLAP::SwitchArg arg_nonJoinAttribJefast("", "nonJoinAttribJefast", "Perform jefast on non join attributes"            , cmd, false);
     TCLAP::SwitchArg arg_jefastModify       ("", "jefastModify"       , "Perform jefast insert and delete experiment"      , cmd, false);
     TCLAP::SwitchArg arg_indexJoin          ("", "indexJoin"          , "Perform pseudo index join sampling"               , cmd, false);
+    TCLAP::SwitchArg arg_indexJoinA         ("", "indexJoinA"         , "Perform pseudo index advanced join sampling"      , cmd, false);
 
     TCLAP::ValueArg<int> arg_jefastModifyCount("", "jefastModifyCount", "Number of inserts and deletes to perform in modify experiment", true, 10000, "int");
 
@@ -38,6 +39,7 @@ global_settings parse_args(int argc, char ** argv)
     settings.nonJoinAttribJefast = arg_nonJoinAttribJefast.getValue();
     settings.jefastModify        = arg_jefastModify.getValue();
     settings.indexJoin           = arg_indexJoin.getValue();
+    settings.indexJoinA          = arg_indexJoinA.getValue();
 
     settings.modifyCount         = arg_jefastModifyCount.getValue();
 
@@ -55,7 +57,8 @@ global_settings parse_args(int argc, char ** argv)
                        || settings.joinAttribHash
                        || settings.indexJoin;
 
-    settings.buildPseudoIndex = settings.indexJoin;
+    settings.buildPseudoIndex = settings.indexJoin ;
+    settings.buildPseudoIndexA = settings.indexJoinA;
 
 #ifdef WIN32
     settings.null_file_name = "nul";

@@ -27,11 +27,14 @@
 #include "database/TableNation.h"
 #include "database/TableSupplier.h"
 #include "database/TablePartsupp.h"
+#include "database/Table.h"
 
 #include "database/jefastIndex.h"
 #include "database/jefastBuilder.h"
 #include "database/pseudoIndex.h"
 #include "database/JoinOutputColumnContainer.h"
+#include "database/PathIndexBuilder.h"
+#include "database/JoinPath.h"
 
 static std::shared_ptr<Table> region_table;
 static std::shared_ptr<Table> nation_table;
@@ -693,6 +696,20 @@ int main(int argc, char** argv) {
 
         std::cout << "sampling 100 took " << timer.getMilliseconds() << " milliseconds with cardinality " << "NEED FIXED" << std::endl;
         data_map->appendArray("pseudo index took ", long(timer.getMilliseconds()));
+    }
+
+
+    if (query0Settings.buildPseudoIndexA){
+        std::cout<<"Start building advanced pseudo index ..."<<std::endl;
+        timer.reset();
+        timer.start();
+        nation_table->get_join_attribute_relation_index(Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY);
+        supplier_table->get_join_attribute_relation_index( Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY);
+
+        JoinPath joinPath;
+        joinPath.addNode("key",DATABASE_DATA_TYPES::STRING);
+//        PathIndexBuilder pathIndexBuilder(joinPath);
+
     }
 
 
