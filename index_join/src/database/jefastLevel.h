@@ -17,10 +17,10 @@
 #include "jefastVertex.h"
 #include "DatabaseSharedTypes.h"
 
-//typedef std::map<jfkey_t, std::shared_ptr<JefastVertex> > internal_map;
+typedef std::map<jfkey_t, std::shared_ptr<JefastVertex> > internal_map;
 //typedef btree::btree_map<jfkey_t, std::shared_ptr<JefastVertex> > internal_map;
 typedef std::pair<jfkey_t, std::shared_ptr<JefastVertex> > map_pair_t;
-typedef std::unordered_map<jfkey_t, std::shared_ptr<JefastVertex> > internal_map;
+//typedef std::unordered_map<jfkey_t, std::shared_ptr<JefastVertex> > internal_map;
 
 
 class JefastLevelEnumerator {
