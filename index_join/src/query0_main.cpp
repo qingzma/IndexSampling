@@ -35,6 +35,7 @@
 #include "database/JoinOutputColumnContainer.h"
 #include "database/PathIndexBuilder.h"
 #include "database/JoinPath.h"
+#include "database/pseudoIndexAdvanced.h"
 
 static std::shared_ptr<Table> region_table;
 static std::shared_ptr<Table> nation_table;
@@ -698,7 +699,7 @@ int main(int argc, char** argv) {
         data_map->appendArray("pseudo index took ", long(timer.getMilliseconds()));
     }
 
-
+    PseudoIndexAdvancedBuilder pseudoIndexAdvancedBuilder;
     if (query0Settings.buildPseudoIndexA){
         std::cout<<"Start building advanced pseudo index ..."<<std::endl;
         timer.reset();
@@ -706,9 +707,24 @@ int main(int argc, char** argv) {
         nation_table->get_join_attribute_relation_index(Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY);
         supplier_table->get_join_attribute_relation_index( Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY);
 
-        JoinPath joinPath;
+        /*JoinPath joinPath;
         joinPath.addNode("key",DATABASE_DATA_TYPES::STRING);
-//        PathIndexBuilder pathIndexBuilder(joinPath);
+        joinPath.addNode("12",DATABASE_DATA_TYPES::INT64);
+        std::cout<<joinPath.toString()<<std::endl;*/
+//        PathIndex pathIndex("joinPath",0);
+
+        pseudoIndexAdvancedBuilder.AppendTable(region_table, -1, Table_Region::R_REGIONKEY, 0);
+        pseudoIndexAdvancedBuilder.AppendTable(nation_table, Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY, 1);
+        pseudoIndexAdvancedBuilder.AppendTable(supplier_table, Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY, 2);
+        pseudoIndexAdvancedBuilder.AppendTable(partssupp_table, Table_Partsupp::PS_SUPPKEY, -1, 3);
+
+        pseudoIndexAdvancedBuilder.Build();
+
+        timer.stop();
+
+        std::cout << "building pseudo index took " << timer.getMilliseconds() << " milliseconds with cardinality " << pseudoIndexBuilder.getCardinality() << std::endl;
+        data_map->appendArray("pseudo index built ", long(timer.getMilliseconds()));
+
 
     }
 

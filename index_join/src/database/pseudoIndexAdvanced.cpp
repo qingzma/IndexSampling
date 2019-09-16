@@ -16,9 +16,11 @@
 
 
 PseudoIndexAdvancedBuilder::PseudoIndexAdvancedBuilder() {
-    m_join_counts={};
+    /*m_join_counts={};*/
     m_join_counts_acc={};
     m_sampleIndexContainer={};
+    /*m_pathIndexes = std::make_shared<std::map<JoinPath, PathIndex, multimapComp>>();*/
+    m_pathIndexes = std::make_shared<std::map<std::string, PathIndex>>();
 }
 
 int PseudoIndexAdvancedBuilder::AppendTable(std::shared_ptr<Table> table, int RHSIndex, int LHSIndex, int tableNumber) {
@@ -38,76 +40,128 @@ void PseudoIndexAdvancedBuilder::Build(){
     }
 
 
-
     auto table0= m_joinedTables.begin();
     std::shared_ptr < key_index > table0Index = table0->get()->get_key_index(m_LHSJoinIndex.at(0));
 
     // initialize m_join_counts
     for (key_index::iterator it = table0Index->begin(); it!= table0Index->end(); it++){
+        /*JoinPath joinPath(std::to_string(it->first),DATABASE_DATA_TYPES::STRING);*/
         try {
-            m_join_counts.at("$_"+std::to_string(it->first)) += 1;
+            /*m_join_counts.at("$_"+std::to_string(it->first)) += 1;*/
+            m_pathIndexes->at(std::to_string(it->first)).m_indexes->at(0).push_back(it->second);
         } catch (std::out_of_range e){
-            m_join_counts.emplace("$_"+std::to_string(it->first), 1);
+            /*m_join_counts.emplace("$_"+std::to_string(it->first), 1);*/
+            std::vector<int64_t > vecOne(it->second);
+            PathIndex pathIndex(std::to_string(it->first),1);
+            pathIndex.m_indexes->emplace(0, vecOne);
+            m_pathIndexes->emplace(std::to_string(it->first),pathIndex);
+            /*m_pathIndexes->insert(std::pair<std::string, PathIndex>(std::to_string(it->first),pathIndex));*/
+            /*m_pathIndexes->emplace(joinPath,vecOne);*/
         }
-
     }
 
-//    for (auto item: m_join_counts){
-//        std::cout<<item.first<<", "<<item.second<<std::endl;
-//    }
 
-    // build path for intermediate by-directional tables.
+    /*for (auto item: m_join_counts){
+        std::cout<<item.first<<", "<<item.second<<std::endl;
+    }*/
+
+    /* build path for intermediate by-directional tables.*/
     for (int table_count=1; table_count<n_tables-1;table_count++){
-//        std::cout<<"table count is "<< table_count<<std::endl;
-//        std::shared_ptr< key_index > tableIIndex = m_joinedTables.at(table_count)->get_key_index(m_RHSJoinIndex.at(table_count));
-        std::shared_ptr< composite_key_index > tableIComplexIndex = m_joinedTables.at(table_count)->get_composite_key_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
+        /*std::cout<<"table count is "<< table_count<<std::endl;
+        std::shared_ptr< key_index > tableIIndex = m_joinedTables.at(table_count)->get_key_index(m_RHSJoinIndex.at(table_count));*/
+        std::shared_ptr< composite_key_index > tableICompositeIndex = m_joinedTables.at(table_count)->get_composite_key_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
         std::shared_ptr< join_attributes_relation_index> tableIJoinIndex = m_joinedTables.at(table_count)->get_join_attribute_relation_index(m_RHSJoinIndex.at(table_count),m_LHSJoinIndex.at(table_count));
 
-        std::map<std::string, int64_t> new_join_counts{};
-        // iterate over m_join_counts
-        for (auto item:m_join_counts){
-//            std::cout<<"in item"<<std::endl;
-            int64_t LTableLKey = StringSplitter::split_last_int64(item.first, "_");
+        std::shared_ptr<std::map<std::string, PathIndex>> new_path_indexes;
+        new_path_indexes = std::make_shared<std::map<std::string, PathIndex>>();
+        /* iterate over m_join_counts*/
+        for (auto item:(*m_pathIndexes)){
+            /*std::cout<<"in item"<<std::endl;*/
+            int64_t LTableLKey = StringSplitter::split_last_int64(item.first, "-");
+            /*int64_t LTableLKey = item.first.getLastNodeInt64();*/
 
-            // if there is no join pair in the right table, delete the records in m_join_counts
+            /* if there is no join pair in the right table, delete the records in m_join_counts*/
 
             std::set<int64_t > RTableRKeys = tableIJoinIndex->at(LTableLKey);
 
             for (int64_t RTableRkey: RTableRKeys){
-//                    std::cout<<"right label key is "<<RTableRkey<<std::endl;
-                std::tuple<jfkey_t,jfkey_t> complex_key {LTableLKey, RTableRkey};
-                new_join_counts[item.first+"-$_"+std::to_string(RTableRkey)]= m_join_counts[item.first] * tableIComplexIndex->count(complex_key);
+
+                /*std::cout<<"right label key is "<<RTableRkey<<std::endl;*/
+                std::tuple<jfkey_t,jfkey_t> composite_key {LTableLKey, RTableRkey};
+                /*new_join_counts[item.first+"-$_"+std::to_string(RTableRkey)]= m_join_counts[item.first] * tableIComplexIndex->count(complex_key);*/
+                PathNode  pathNode(std::to_string(RTableRkey), DATABASE_DATA_TYPES::INT64);
+                /*JoinPath newJoinPathKey = item.first;
+                newJoinPathKey.addNode(pathNode);*/
+                /*(*new_path_indexes)[newJoinPathKey] = m_pathIndexes->at(item.first);*/
+
+                new_path_indexes->emplace(item.first+"-"+std::to_string(RTableRkey), m_pathIndexes->at(item.first));
+
+
+                auto complexItems = tableICompositeIndex->equal_range(composite_key);
+
+                for(auto complexItemIter = complexItems.first; complexItemIter != complexItems.second; ++ complexItemIter){
+                    /*(*new_path_indexes)[newJoinPathKey].m_indexes->at(table_count).push_back(complexItemIter->second);*/
+                    if (new_path_indexes->at(item.first+"-"+std::to_string(RTableRkey)).m_indexes->count(table_count) !=0){
+                        new_path_indexes->at(item.first+"-"+std::to_string(RTableRkey)).m_indexes->at(table_count).push_back(complexItemIter->second);
+                    }else{
+                        PathIndex pathIndex(item.first+"-"+std::to_string(RTableRkey),0);
+                        std::vector<int64_t > vec(complexItemIter->second);
+                        pathIndex.m_indexes->emplace(table_count,vec);
+                        new_path_indexes->emplace(item.first+"-"+std::to_string(RTableRkey), pathIndex);
+                    }
+
+                }
+
+
             }
         }
 
-        m_join_counts = new_join_counts;
 
-//        for (auto item: m_join_counts){
-//            std::cout<<item.first<<","<<item.second<<std::endl;
-//        }
+        /*m_join_counts = new_join_counts;*/
+        m_pathIndexes = new_path_indexes;
+
+        /*for (auto item: m_join_counts){
+            std::cout<<item.first<<","<<item.second<<std::endl;
+        }*/
     }
 
-    // build path for the right most table.
-    std::map<std::string, int64_t> new_join_counts{};
+    std::cout<<"to here"<<std::endl;
+    /* build path for the right most table.*/
+    /*std::map<std::string, int64_t> new_join_counts{};*/
     std::shared_ptr< key_index > tableIIndex = m_joinedTables.at(n_tables-1)->get_key_index(m_RHSJoinIndex.at(n_tables-1));
-    for (auto item: m_join_counts){
-        int64_t LTableLKey = StringSplitter::split_last_int64(item.first, "_");
+    for (auto item: (*m_pathIndexes)){
+        /*int64_t LTableLKey = StringSplitter::split_last_int64(item.first, "_");*/
+        /*int64_t LTableLKey = item.first.getLastNodeInt64();*/
+        int64_t LTableLKey = StringSplitter::split_last_int64(item.first, "-");
+        /*std::cout<<item.first<<"<----->"<<LTableLKey<<std::endl;*/
         if (tableIIndex->count(LTableLKey) != 0){
-            new_join_counts[item.first+"-$"]= m_join_counts[item.first] * tableIIndex->count(LTableLKey);
+            auto keyItems = tableIIndex->equal_range(LTableLKey);
+            for (auto keyItemIter = keyItems.first; keyItemIter != keyItems.second; ++ keyItemIter){
+                if(item.second.m_indexes->count(n_tables-1) != 0){
+                    item.second.m_indexes->at(n_tables-1).push_back(keyItemIter->second);
+                }
+                else{
+                    PathIndex pathIndex(item.first,0);
+                    std::vector<int64_t > vec(keyItemIter->second);
+                    pathIndex.m_indexes->emplace(n_tables-1,vec);
+                }
+
+            }
+            /*new_join_counts[item.first+"-$"]= m_join_counts[item.first] * tableIIndex->count(LTableLKey);*/
         }
     }
-
-    m_join_counts = new_join_counts;
+    std::cout<<"to here"<<std::endl;
+    /*m_join_counts = new_join_counts;*/
 
     m_cadinality = 0;
     m_join_counts_acc[0] = std::pair<std::string, int64_t>{"non_index", m_cadinality};
 
     int index = 1;
-    for (auto item: m_join_counts){
+    for (auto item:(*m_pathIndexes)){
         /* std::cout<<item.first<<","<<item.second<<std::endl;*/
-        m_cadinality += item.second;
+        /*m_cadinality += item.second;
         m_join_counts_acc[index] = std::pair<std::string, int64_t>{item.first, m_cadinality};
-        index ++;
+        index ++;*/
     }
 
     /*for (auto value:m_join_counts_acc){
