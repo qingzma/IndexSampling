@@ -46,24 +46,38 @@ void PseudoIndexAdvancedBuilder::Build(){
     // initialize m_join_counts
     for (key_index::iterator it = table0Index->begin(); it!= table0Index->end(); it++){
         /*JoinPath joinPath(std::to_string(it->first),DATABASE_DATA_TYPES::STRING);*/
+
         try {
             /*m_join_counts.at("$_"+std::to_string(it->first)) += 1;*/
+
             m_pathIndexes->at(std::to_string(it->first)).m_indexes->at(0).push_back(it->second);
+
         } catch (std::out_of_range e){
+
             /*m_join_counts.emplace("$_"+std::to_string(it->first), 1);*/
-            std::vector<int64_t > vecOne(it->second);
+
+            std::vector<int64_t > vecOne{it->second};
             PathIndex pathIndex(std::to_string(it->first),1);
             pathIndex.m_indexes->emplace(0, vecOne);
             m_pathIndexes->emplace(std::to_string(it->first),pathIndex);
             /*m_pathIndexes->insert(std::pair<std::string, PathIndex>(std::to_string(it->first),pathIndex));*/
             /*m_pathIndexes->emplace(joinPath,vecOne);*/
+
         }
     }
 
 
-    /*for (auto item: m_join_counts){
-        std::cout<<item.first<<", "<<item.second<<std::endl;
-    }*/
+    for (auto item: (*m_pathIndexes)){
+        std::cout<<item.first<<", {";
+        for (auto haha= item.second.m_indexes->begin(); haha != item.second.m_indexes->end(); haha ++){
+            std::cout<<"< ";
+            for (int64_t value : haha->second){
+                std::cout<<value<<",";
+            }
+            std::cout<<">,";
+        }
+        std::cout<<"}"<<std::endl;
+    }
 
     /* build path for intermediate by-directional tables.*/
     for (int table_count=1; table_count<n_tables-1;table_count++){
@@ -104,10 +118,15 @@ void PseudoIndexAdvancedBuilder::Build(){
                     if (new_path_indexes->at(item.first+"-"+std::to_string(RTableRkey)).m_indexes->count(table_count) !=0){
                         new_path_indexes->at(item.first+"-"+std::to_string(RTableRkey)).m_indexes->at(table_count).push_back(complexItemIter->second);
                     }else{
-                        PathIndex pathIndex(item.first+"-"+std::to_string(RTableRkey),0);
+                        PathIndex pathIndex = item.second;
+                        pathIndex.m_joinPath=item.first+"-"+std::to_string(RTableRkey);
+                        std::vector<int64_t > vec{complexItemIter->second};
+                        pathIndex.m_indexes->emplace(table_count, vec);
+                        new_path_indexes->emplace(item.first+"-"+std::to_string(RTableRkey), pathIndex);
+                        /*PathIndex pathIndex(item.first+"-"+std::to_string(RTableRkey),0);
                         std::vector<int64_t > vec(complexItemIter->second);
                         pathIndex.m_indexes->emplace(table_count,vec);
-                        new_path_indexes->emplace(item.first+"-"+std::to_string(RTableRkey), pathIndex);
+                        new_path_indexes->emplace(item.first+"-"+std::to_string(RTableRkey), pathIndex);*/
                     }
 
                 }
@@ -120,12 +139,24 @@ void PseudoIndexAdvancedBuilder::Build(){
         /*m_join_counts = new_join_counts;*/
         m_pathIndexes = new_path_indexes;
 
+        for (auto item: (*m_pathIndexes)){
+            std::cout<<item.first<<", {";
+            for (auto haha= item.second.m_indexes->begin(); haha != item.second.m_indexes->end(); haha ++){
+                std::cout<<"< ";
+                for (int64_t value : haha->second){
+                    std::cout<<value<<",";
+                }
+                std::cout<<">,";
+            }
+            std::cout<<"}"<<std::endl;
+        }
+
         /*for (auto item: m_join_counts){
             std::cout<<item.first<<","<<item.second<<std::endl;
         }*/
     }
 
-    std::cout<<"to here"<<std::endl;
+
     /* build path for the right most table.*/
     /*std::map<std::string, int64_t> new_join_counts{};*/
     std::shared_ptr< key_index > tableIIndex = m_joinedTables.at(n_tables-1)->get_key_index(m_RHSJoinIndex.at(n_tables-1));
@@ -150,19 +181,41 @@ void PseudoIndexAdvancedBuilder::Build(){
             /*new_join_counts[item.first+"-$"]= m_join_counts[item.first] * tableIIndex->count(LTableLKey);*/
         }
     }
-    std::cout<<"to here"<<std::endl;
-    /*m_join_counts = new_join_counts;*/
 
-    m_cadinality = 0;
-    m_join_counts_acc[0] = std::pair<std::string, int64_t>{"non_index", m_cadinality};
-
-    int index = 1;
-    for (auto item:(*m_pathIndexes)){
-        /* std::cout<<item.first<<","<<item.second<<std::endl;*/
-        /*m_cadinality += item.second;
-        m_join_counts_acc[index] = std::pair<std::string, int64_t>{item.first, m_cadinality};
-        index ++;*/
+    for (auto item: (*m_pathIndexes)){
+        std::cout<<item.first<<", {";
+        for (auto haha= item.second.m_indexes->begin(); haha != item.second.m_indexes->end(); haha ++){
+            std::cout<<"< ";
+            for (int64_t value : haha->second){
+                std::cout<<value<<",";
+            }
+            std::cout<<">,";
+        }
+        std::cout<<"}"<<std::endl;
     }
+
+    std::cout<<"end;"<<std::endl;
+
+//    /*m_join_counts = new_join_counts;*/
+//
+//    m_cadinality = 0;
+//    m_join_counts_acc[0] = std::pair<std::string, int64_t>{"non_index", m_cadinality};
+//
+//    int index = 1;
+//    for (auto item:(*m_pathIndexes)){
+//        int64_t count = 1;
+//        for (auto countInVec= item.second.m_indexes->begin();countInVec !=item.second.m_indexes->end(); countInVec++){
+////            std::cout<<countInVec->second.size()<<",";
+//            count *=countInVec->second.size();
+//        }
+////        std::cout<<std::endl;
+//        item.second.m_count = count;
+//        m_cadinality += count;
+//         std::cout<<item.first<<","<<item.second.m_count<<std::endl;
+//        /*m_cadinality += item.second;
+//        m_join_counts_acc[index] = std::pair<std::string, int64_t>{item.first, m_cadinality};
+//        index ++;*/
+//    }
 
     /*for (auto value:m_join_counts_acc){
         std::cout<<value.first<<","<<value.second<<std::endl;

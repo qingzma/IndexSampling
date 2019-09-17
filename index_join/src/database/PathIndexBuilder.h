@@ -25,12 +25,14 @@ struct PathIndexContainer{
 
 class PathIndex{
 private:
-    std::shared_ptr<int64_t> m_count;
+
     int m_dimension;
     /*JoinPath m_joinPath;*/
-    std::string m_joinPath;
+
 public:
+    int64_t m_count;
     std::shared_ptr<std::map<int, std::vector<int64_t>>> m_indexes;
+    std::string m_joinPath;
 public:
     /*PathIndex(JoinPath joinPath, int dimension) :m_joinPath(joinPath), m_dimension(dimension){};*/
     PathIndex(std::string joinPath, int dimension) :m_joinPath(joinPath), m_dimension(dimension){

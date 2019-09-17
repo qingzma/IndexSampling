@@ -50,9 +50,9 @@ void PseudoIndexBuilder::Build(){
         }
     }
 
-//    for (auto item: m_join_counts){
-//        std::cout<<item.first<<", "<<item.second<<std::endl;
-//    }
+    for (auto item: m_join_counts){
+        std::cout<<item.first<<", "<<item.second<<std::endl;
+    }
 
     // build path for intermediate by-directional tables.
     for (int table_count=1; table_count<n_tables-1;table_count++){
@@ -80,9 +80,9 @@ void PseudoIndexBuilder::Build(){
 
         m_join_counts = new_join_counts;
 
-//        for (auto item: m_join_counts){
-//            std::cout<<item.first<<","<<item.second<<std::endl;
-//        }
+        for (auto item: m_join_counts){
+            std::cout<<item.first<<","<<item.second<<std::endl;
+        }
     }
 
     // build path for the right most table.
@@ -102,7 +102,7 @@ void PseudoIndexBuilder::Build(){
 
     int index = 1;
     for (auto item: m_join_counts){
-        /* std::cout<<item.first<<","<<item.second<<std::endl;*/
+        std::cout<<item.first<<","<<item.second<<std::endl;
         m_cadinality += item.second;
         m_join_counts_acc[index] = std::pair<std::string, int64_t>{item.first, m_cadinality};
         index ++;

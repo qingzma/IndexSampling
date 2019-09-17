@@ -667,8 +667,8 @@ int main(int argc, char** argv) {
 
         pseudoIndexBuilder.AppendTable(region_table, -1, Table_Region::R_REGIONKEY, 0);
         pseudoIndexBuilder.AppendTable(nation_table, Table_Nation::N_REGIONKEY, Table_Nation::N_NATIONKEY, 1);
-        pseudoIndexBuilder.AppendTable(supplier_table, Table_Supplier::S_NATIONKEY, Table_Supplier::S_SUPPKEY, 2);
-        pseudoIndexBuilder.AppendTable(partssupp_table, Table_Partsupp::PS_SUPPKEY, -1, 3);
+        pseudoIndexBuilder.AppendTable(supplier_table, Table_Supplier::S_NATIONKEY, -1,2);//Table_Supplier::S_SUPPKEY, 2);
+//        pseudoIndexBuilder.AppendTable(partssupp_table, Table_Partsupp::PS_SUPPKEY, -1, 3);
 
         pseudoIndexBuilder.Build();
 
@@ -722,7 +722,7 @@ int main(int argc, char** argv) {
 
         timer.stop();
 
-        std::cout << "building pseudo index took " << timer.getMilliseconds() << " milliseconds with cardinality " << pseudoIndexBuilder.getCardinality() << std::endl;
+        std::cout << "building pseudo index took " << timer.getMilliseconds() << " milliseconds with cardinality " << pseudoIndexAdvancedBuilder.getCardinality() << std::endl;
         data_map->appendArray("pseudo index built ", long(timer.getMilliseconds()));
 
 
